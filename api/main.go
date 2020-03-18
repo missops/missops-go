@@ -5,6 +5,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/missops/missops-go/api/handler"
+	"github.com/missops/missops-go/api/middleware"
 )
 
 //RegisterHandlers is httprouter.Router
@@ -17,7 +18,7 @@ func RegisterHandlers() *httprouter.Router {
 
 func main() {
 	r := RegisterHandlers()
-
-	http.ListenAndServe(":8080", r)
+	mh := middleware.NewMiddlewareHandler(r)
+	http.ListenAndServe(":8080", mh)
 
 }

@@ -1,5 +1,7 @@
 package models
 
+import "database/sql"
+
 //AddUserCredential : insert user to databases
 func AddUserCredential(userName string, pwd string) error {
 	stmtIn, err := dbConn.Prepare("INSERT INTO missops_user (user_name,user_pwd) VALUES (?,?)")
@@ -7,8 +9,10 @@ func AddUserCredential(userName string, pwd string) error {
 		return err
 	}
 	defer stmtIn.Close()
-	stmtIn.Exec(userName, pwd)
-
+	_, err = stmtIn.Exec(userName, pwd)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -20,7 +24,10 @@ func GetUserCredential(userName string) (string, error) {
 	}
 	defer stmtOut.Close()
 	var pwd string
-	stmtOut.QueryRow(userName).Scan(&pwd)
+	err = stmtOut.QueryRow(userName).Scan(&pwd)
+	if err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
 	return pwd, nil
 }
 
@@ -31,6 +38,9 @@ func DeleteUser(userName string, pwd string) error {
 		return err
 	}
 	defer stmtDel.Close()
-	stmtDel.Exec(userName, pwd)
+	_, err = stmtDel.Exec(userName, pwd)
+	if err != nil {
+		return err
+	}
 	return nil
 }

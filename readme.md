@@ -43,9 +43,7 @@ func main() {
 }
 ```
 
-## 实现用户登录功能
-
-#### 实现注册路由
+## 实现注册路由
 在main.go添加user路由
 ```
 //RegisterHandlers is httprouter.Router
@@ -72,7 +70,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request, p httprouter.Para
 }
 }
 ```
-#### 传参数路由
+## 传参数路由
 在main.go内添加带user_name参数的路由
 ```
 	router.POST("/user/:user_name", handler.LoginHandler)
@@ -88,7 +86,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 使用Postman带参数POST请求接口
 ![](http://img.hixuxu.com/2020-03-14-042314.jpg)
 
-#### 错误处理
+## 错误处理
 校验错误的情况下需要进行error处理，准备error.go文件，我们创建一个Err和ErrorResponse，结构化错误。
 ```
 type ErrorResponse struct {
@@ -110,7 +108,7 @@ var (
 	ErrorAuthFailed            = ErrorResponse{HttpSC: 401, Error: Err{Error: "auth failed.", ErrorCode: "002"}}
 )
 ```
-#### 连接mysql数据库
+## 连接mysql数据库
 准备数据库，创建数据库表。
 ```
 #创建数据库
@@ -140,7 +138,7 @@ func init() {
 	}
 }
 ```
-#### 数据库操作
+## 数据库操作
 创建数据库操作,以增删改查用户表为例
 ```
 package models
@@ -181,7 +179,7 @@ func DeleteUser(userName string, pwd string) error {
 }
 
 ```
-#### 测试用例
+## 测试用例
 创建针对上面用户增删改查的测试用例
 ```
 package models
@@ -235,4 +233,116 @@ func testRegetUser(t *testing.T) {
 	}
 }
 
+```
+## session设置
+先定义一个session结构，包含name和ttl
+```
+//Session :  session struct
+type Session struct {
+	Name string
+	TTL   int64
+}
+```
+使用sync.Map存入内存
+```
+var sessionMap *sync.Map
+
+func init(){
+	sessionMap = &sync.Map{}
+}
+```
+增加创建sid和检查sid是否过期的方法
+```
+//deleteExpiredSession : delete expired session id
+func deleteExpiredSession(sid string) {
+	sessionMap.Delete(sid)
+}
+
+//GeneraterNewSessionID : make new session id
+func GeneraterNewSessionID(uname string) string {
+	id := uuid.NewV4().String()
+	ct := time.Now().UnixNano() / 1000000
+	ttl := ct + 30*60*1000 //30 min
+
+	ss := &Session{
+		Name: uname,
+		TTL:  ttl,
+	}
+	sessionMap.Store(id, ss)
+	return id
+}
+
+//IsSessionExpired : session id and ttl is not Expired
+func IsSessionExpired(sid string) (string, bool) {
+	ss, ok := sessionMap.Load(sid)
+	if ok {
+		ct := time.Now().UnixNano() / 1000000
+		if ss.(*Session).TTL < ct {
+			deleteExpiredSession(sid)
+			return "", true
+		}
+		return ss.(*Session).Name, false
+
+	}
+	return "", true
+}
+```
+## middleware设置
+创建middlewarehandler，需要实现http.Handler的ServerHTTP方法
+```
+package middleware
+
+import (
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+)
+
+type middlewareHandler struct {
+	r *httprouter.Router
+}
+
+//NewMiddlewareHandler : new a middleware
+func NewMiddlewareHandler(r *httprouter.Router) http.Handler {
+	m := middlewareHandler{}
+	m.r = r
+	return m
+}
+
+func (m middlewareHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	//Check session
+	//log
+	m.r.ServeHTTP(w, r)
+}
+
+```
+将middlewarehandler注册到ListenAndServe
+```
+	r := RegisterHandlers()
+	mh := middleware.NewMiddlewareHandler(r)
+	http.ListenAndServe(":8080", mh)
+```
+创建auth.go丰富middleware处理内容
+```
+package middleware
+
+import (
+	"net/http"
+
+	"github.com/missops/missops-go/api/utils"
+)
+
+//ValidateUserSession : for middleware check session
+func ValidateUserSession(r *http.Request) bool {
+	sid := r.Header.Get("X-Session-ID")
+	if len(sid) == 0 {
+		return false
+	}
+	uname, ok := utils.IsSessionExpired(sid)
+	if ok {
+		return false
+	}
+	r.Header.Add("X-Session-Name", uname)
+	return true
+}
 ```
