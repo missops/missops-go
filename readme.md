@@ -13,7 +13,7 @@ go mod init
 ```
 
 ## web目录结构
-![](http://img.hixuxu.com/2020-03-19-142741.png)
+![](http://img.hixuxu.com/2020-03-21-043439.png)
 
 ## 实现主路由
 编译main.go,这里使用了[httprouter](https://github.com/julienschmidt/httprouter)这个库。
