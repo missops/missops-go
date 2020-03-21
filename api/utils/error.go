@@ -15,4 +15,6 @@ type ErrorResponse struct {
 var (
 	ErrorRquestBodyParseFailed = ErrorResponse{HttpSC: 400, Error: Err{Error: "request body parse failed.", ErrorCode: "001"}}
 	ErrorAuthFailed            = ErrorResponse{HttpSC: 401, Error: Err{Error: "auth failed.", ErrorCode: "002"}}
+	ErrorDBFailed              = ErrorResponse{HttpSC: 500, Error: Err{Error: "DB failed.", ErrorCode: "003"}}
+	ErrorInternalFault         = ErrorResponse{HttpSC: 500, Error: Err{Error: "internal service error.", ErrorCode: "004"}}
 )

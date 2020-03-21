@@ -1,5 +1,6 @@
 # Go从零开发一个web系列
 [TOC]
+
 ## 准备Go环境
 安装golang就不写了，这里使用到了gomod管理依赖包，需要Go的版本大于1.12,设置GOPATH和GOPROXY,并打开GO111MODULE
 ```
@@ -12,14 +13,10 @@ go mod init
 ```
 
 ## web目录结构
-├── api
-│   ├── handler
-│   ├── main.go
-├── doc
-│   └── readme.md
-└── go.mod
+![](http://img.hixuxu.com/2020-03-19-142741.png)
+
 ## 实现主路由
-编译main.go,这里使用了httprouter这个库：https://github.com/julienschmidt/httprouter
+编译main.go,这里使用了[httprouter](https://github.com/julienschmidt/httprouter)这个库。
 ```
 package main
 
@@ -251,7 +248,7 @@ func init(){
 	sessionMap = &sync.Map{}
 }
 ```
-增加创建sid和检查sid是否过期的方法
+增加创建session和检查session是否过期的方法
 ```
 //deleteExpiredSession : delete expired session id
 func deleteExpiredSession(sid string) {
@@ -346,3 +343,75 @@ func ValidateUserSession(r *http.Request) bool {
 	return true
 }
 ```
+## response定义
+定义sendErrorResponse和sendNormalResponse 
+```
+package handler
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+
+	"github.com/missops/missops-go/api/utils"
+)
+
+func sendErrorResponse(w http.ResponseWriter, e utils.ErrorResponse) {
+	w.WriteHeader(e.HttpSC)
+	res, _ := json.Marshal(e.Error)
+	io.WriteString(w, string(res))
+
+}
+
+func sendNormalResponse(w http.ResponseWriter, sc int, resp string) {
+	w.WriteHeader(sc)
+	io.WriteString(w, resp)
+}
+```
+## handler补全
+以CreateUserHandler为例，先定义输入输出struct
+```
+//UserCredential : request
+type userCredential struct {
+	Uname string `json:"user_name"`
+	Pwd   string `json:"user_password"`
+}
+
+//createUserResponse : reponse
+type createUserResponse struct {
+	Success   bool   `json:"success"`
+	Sessionid string `json:"session_id"`
+}
+
+```
+CreateUserHandler
+```
+//CreateUserHandler : handler for  user add
+func CreateUserHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	res, _ := ioutil.ReadAll(r.Body)
+
+	ubody := &userCredential{}
+	if err := json.Unmarshal(res, ubody); err != nil {
+		sendErrorResponse(w, utils.ErrorRquestBodyParseFailed)
+		return
+	}
+	if err := models.AddUserCredential(ubody.Uname, ubody.Pwd); err != nil {
+		sendErrorResponse(w, utils.ErrorDBFailed)
+		return
+	}
+	id := utils.GeneraterNewSessionID(ubody.Uname)
+	resp := &createUserResponse{Success: true, Sessionid: id}
+
+	if res, err := json.Marshal(resp); err != nil {
+		sendErrorResponse(w, utils.ErrorInternalFault)
+	} else {
+		sendNormalResponse(w, 201, string(res))
+	}
+
+}
+
+```
+Postman请求接口
+
+![](http://img.hixuxu.com/2020-03-21-043258.png)
+
