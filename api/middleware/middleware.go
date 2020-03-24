@@ -18,9 +18,8 @@ func NewMiddlewareHandler(r *httprouter.Router) http.Handler {
 }
 
 func (m middlewareHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//user auth
-	ValidateUserSession(r)
-	//user auth
+	validateUserSession(r)
+
 	//log
 	m.r.ServeHTTP(w, r)
 }

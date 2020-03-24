@@ -20,5 +20,4 @@ func main() {
 	r := RegisterHandlers()
 	mh := middleware.NewMiddlewareHandler(r)
 	http.ListenAndServe(":8080", mh)
-
 }

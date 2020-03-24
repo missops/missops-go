@@ -6,8 +6,8 @@ import (
 	"github.com/missops/missops-go/api/utils"
 )
 
-//ValidateUserSession : for middleware check session
-func ValidateUserSession(r *http.Request) bool {
+//validateUserSession : for middleware check session
+func validateUserSession(r *http.Request) bool {
 	sid := r.Header.Get("X-Session-ID")
 	if len(sid) == 0 {
 		return false
@@ -18,4 +18,9 @@ func ValidateUserSession(r *http.Request) bool {
 	}
 	r.Header.Add("X-Session-Name", uname)
 	return true
+}
+
+//validateUser: user is validate
+func validateUser(r *http.Request) bool {
+	return false
 }

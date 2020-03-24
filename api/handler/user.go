@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/missops/missops-go/api/models"
+	"github.com/missops/missops-go/api/module"
 	"github.com/missops/missops-go/api/utils"
 )
 
@@ -29,20 +29,20 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request, p httprouter.Para
 
 	ubody := &userCredential{}
 	if err := json.Unmarshal(res, ubody); err != nil {
-		sendErrorResponse(w, utils.ErrorRquestBodyParseFailed)
+		SendErrorResponse(w, utils.ErrorRquestBodyParseFailed)
 		return
 	}
-	if err := models.AddUserCredential(ubody.Uname, ubody.Pwd); err != nil {
-		sendErrorResponse(w, utils.ErrorDBFailed)
+	if err := module.AddUserCredential(ubody.Uname, ubody.Pwd); err != nil {
+		SendErrorResponse(w, utils.ErrorDBFailed)
 		return
 	}
 	id := utils.GeneraterNewSessionID(ubody.Uname)
 	resp := &createUserResponse{Success: true, Sessionid: id}
 
 	if res, err := json.Marshal(resp); err != nil {
-		sendErrorResponse(w, utils.ErrorInternalFault)
+		SendErrorResponse(w, utils.ErrorInternalFault)
 	} else {
-		sendNormalResponse(w, 201, string(res))
+		SendNormalResponse(w, 201, string(res))
 	}
 
 }
@@ -50,5 +50,6 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request, p httprouter.Para
 //LoginHandler ： login handler
 func LoginHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	uname := p.ByName("user_name")
+
 	io.WriteString(w, uname)
 }

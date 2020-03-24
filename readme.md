@@ -115,7 +115,7 @@ CREATE DATABASE IF NOT EXISTS missops default charset utf8 COLLATE utf8_general_
 ```
 创建db_connect.go文件,适应init函数
 ```
-package models
+package module
 
 import (
 	"database/sql"
@@ -138,7 +138,7 @@ func init() {
 ## 数据库操作
 创建数据库操作,以增删改查用户表为例
 ```
-package models
+package module
 
 //AddUserCredential : insert user to databases
 func AddUserCredential(userName string, pwd string) error {
@@ -179,7 +179,7 @@ func DeleteUser(userName string, pwd string) error {
 ## 测试用例
 创建针对上面用户增删改查的测试用例
 ```
-package models
+package module
 
 import (
 	"testing"
@@ -395,7 +395,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request, p httprouter.Para
 		sendErrorResponse(w, utils.ErrorRquestBodyParseFailed)
 		return
 	}
-	if err := models.AddUserCredential(ubody.Uname, ubody.Pwd); err != nil {
+	if err := module.AddUserCredential(ubody.Uname, ubody.Pwd); err != nil {
 		sendErrorResponse(w, utils.ErrorDBFailed)
 		return
 	}
